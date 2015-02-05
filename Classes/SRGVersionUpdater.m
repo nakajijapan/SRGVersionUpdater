@@ -8,7 +8,7 @@
 
 #import "SRGVersionUpdater.h"
 #import "UIAlertView+BlocksKit.h"
-#import "AFHTTPRequestOperationManager.h"
+#import "AFHTTPClient.h"
 
 @implementation SRGVersionUpdater {
     NSDictionary *versionInfo;
@@ -20,18 +20,22 @@ NSLocalizedStringFromTableInBundle(key, @"SRGVersionUpdater", [NSBundle bundleWi
 #endif
 
 - (void) executeVersionCheck {
-   NSAssert(_endPointUrl, @"Set EndPointUrl Before Execute Check");
+    NSAssert(_endPointUrl, @"Set EndPointUrl Before Execute Check");
     
-   AFHTTPRequestOperationManager* manager = [AFHTTPRequestOperationManager manager];
-   manager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"text/plain",@"application/json",nil];
-   [manager GET:_endPointUrl parameters:nil
-       success:^(AFHTTPRequestOperation *operation, id responseObject) {
-           versionInfo = responseObject;
-           [self showUpdateAnnounceIfNeeded];
-       } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-           NSLog(@"Request Operation Error! %@", error);
-       }
-   ];
+    // For Old Version
+    AFHTTPClient *client = [[AFHTTPClient alloc] initWithBaseURL: [NSURL URLWithString:_endPointUrl]];
+    NSMutableURLRequest *request = [client requestWithMethod:@"GET" path:nil parameters:nil];
+    [request setCachePolicy:NSURLRequestReloadIgnoringCacheData];
+    [client getPath:nil parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject) {
+        
+        NSDictionary *jsonObj = (NSDictionary *)[NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingAllowFragments error:nil];
+        
+        versionInfo = (NSDictionary *)jsonObj;
+        [self showUpdateAnnounceIfNeeded];
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        NSLog(@"Request Operation Error! %@", error);
+    }];
+    
 }
 
 - (void) showUpdateAnnounceIfNeeded {
@@ -49,15 +53,15 @@ NSLocalizedStringFromTableInBundle(key, @"SRGVersionUpdater", [NSBundle bundleWi
 
 - (void) showUpdateAnnounce {
     UIAlertView *alert = [UIAlertView
-        bk_alertViewWithTitle:[self alertTitle]
-        message:[self alertBody]
-    ];
+                          bk_alertViewWithTitle:[self alertTitle]
+                          message:[self alertBody]
+                          ];
     
     [alert bk_addButtonWithTitle:[self updateButtonText]
                          handler:^(void) {
-        NSURL *updateUrl = [NSURL URLWithString:versionInfo[@"update_url"]];
-        [[UIApplication sharedApplication] openURL:updateUrl];
-    }];
+                             NSURL *updateUrl = [NSURL URLWithString:versionInfo[@"update_url"]];
+                             [[UIApplication sharedApplication] openURL:updateUrl];
+                         }];
     
     if([versionInfo[@"type"] isEqualToString:@"optional"]){
         [alert addButtonWithTitle: [self cancelButtonText]];
