@@ -26,7 +26,7 @@ NSLocalizedStringFromTableInBundle(key, @"SRGVersionUpdater", [NSBundle bundleWi
     AFHTTPClient *client = [[AFHTTPClient alloc] initWithBaseURL: [NSURL URLWithString:_endPointUrl]];
     NSMutableURLRequest *request = [client requestWithMethod:@"GET" path:nil parameters:nil];
     [request setCachePolicy:NSURLRequestReloadIgnoringCacheData];
-    [client getPath:nil parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject) {
+    [client getPath:_endPointUrl parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject) {
         
         NSDictionary *jsonObj = (NSDictionary *)[NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingAllowFragments error:nil];
         
